@@ -10,14 +10,15 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { RNCamera } from 'react-native-camera';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import ApiService from '../services/ApiService';
 
 const { width } = Dimensions.get('window');
 
 const DistributorDashboard = ({ navigation }) => {
+  const [permission, requestPermission] = useCameraPermissions();
   const [showScanner, setShowScanner] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [recentScans, setRecentScans] = useState([]);
@@ -27,7 +28,6 @@ const DistributorDashboard = ({ navigation }) => {
     anomalies: 0,
   });
 
-  const apiService = new ApiService();
 
   useEffect(() => {
     loadRecentScans();
@@ -119,7 +119,7 @@ const DistributorDashboard = ({ navigation }) => {
         scannerRole: 'distributor',
       };
 
-      const result = await apiService.recordCheckpoint(checkpointData);
+      const result = await ApiService.recordCheckpoint(checkpointData);
 
       // Add to recent scans
       const newScan = {
@@ -277,11 +277,11 @@ const DistributorDashboard = ({ navigation }) => {
             <View style={{ width: 28 }} />
           </View>
 
-          <RNCamera
-            style={styles.camera}
-            type={RNCamera.Constants.Type.back}
-            onBarCodeRead={handleBarCodeRead}
-            barCodeTypes={[RNCamera.Constants.BarCodeType.qr]}>
+          <CameraView
+  style={styles.camera}
+  facing="back"
+  onBarcodeScanned={handleBarCodeRead}
+  barcodeScannerSettings={{ barcodeTypes: ['qr'] }}>
             <View style={styles.scannerOverlay}>
               <View style={styles.scannerBox}>
                 <View style={[styles.corner, styles.cornerTopLeft]} />
@@ -296,7 +296,7 @@ const DistributorDashboard = ({ navigation }) => {
                 <ActivityIndicator size="large" color="#fff" style={{ marginTop: 20 }} />
               )}
             </View>
-          </RNCamera>
+          </CameraView>
         </View>
       </Modal>
     </View>
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   scanButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     marginHorizontal: 16,
     marginVertical: 8,
     padding: 20,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   scanBatchId: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#366d80ff',
   },
   anomalyBadge: {
     flexDirection: 'row',
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: '#2E7D32',
+    borderColor: '#366d80ff',
   },
   cornerTopLeft: {
     top: 0,

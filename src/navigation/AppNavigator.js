@@ -17,7 +17,7 @@ const AppNavigator = () => {
       initialRouteName="Login"
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#2E7D32',
+          backgroundColor: '#366d80ff',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {

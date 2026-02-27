@@ -56,7 +56,7 @@ const BatchCard = ({ batch, onPress, onQRPress }) => {
 
       <View style={styles.footer}>
         <View style={styles.checkpointInfo}>
-          <Icon name="timeline" size={16} color="#2E7D32" />
+          <Icon name="timeline" size={16} color="#366d80ff" />
           <Text style={styles.checkpointText}>
             {batch.checkpoints || 0} checkpoints
           </Text>
@@ -68,7 +68,7 @@ const BatchCard = ({ batch, onPress, onQRPress }) => {
               e.stopPropagation();
               onQRPress(batch);
             }}>
-            <Icon name="qr-code" size={20} color="#2E7D32" />
+            <Icon name="qr-code" size={20} color="#366d80ff" />
             <Text style={styles.qrButtonText}>QR Code</Text>
           </TouchableOpacity>
         )}
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   batchId: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#366d80ff',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   },
   checkpointText: {
     fontSize: 12,
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontWeight: '600',
   },
   qrButton: {
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   qrButtonText: {
     fontSize: 14,
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontWeight: '600',
   },
 });

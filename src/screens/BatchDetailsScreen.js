@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import ApiService from '../services/ApiService';
 
 const { width } = Dimensions.get('window');
@@ -17,24 +17,22 @@ const BatchDetailsScreen = ({ route, navigation }) => {
   const [checkpoints, setCheckpoints] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const apiService = new ApiService();
-
+ 
   useEffect(() => {
     loadCheckpoints();
   }, []);
 
   const loadCheckpoints = async () => {
-    setLoading(true);
-    try {
-      const data = await apiService.getBatchDetails(batch.batchId);
-      setCheckpoints(data.checkpoints || getDemoCheckpoints());
-    } catch (error) {
-      setCheckpoints(getDemoCheckpoints());
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  setLoading(true);
+  try {
+    const data = await ApiService.getBatchDetails(batch.batchId);
+    setCheckpoints(data.checkpoints || []);
+  } catch (error) {
+    setCheckpoints([]); 
+  } finally {
+    setLoading(false);
+  }
+};
   const getDemoCheckpoints = () => {
     return [
       {
@@ -100,7 +98,7 @@ const BatchDetailsScreen = ({ route, navigation }) => {
       {/* Statistics Cards */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Icon name="timeline" size={32} color="#2E7D32" />
+          <Icon name="timeline" size={32} color="#366d80ff" />
           <Text style={styles.statValue}>{checkpoints.length}</Text>
           <Text style={styles.statLabel}>Checkpoints</Text>
         </View>
@@ -214,7 +212,7 @@ const BatchDetailsScreen = ({ route, navigation }) => {
       {/* Blockchain Verification */}
       <View style={styles.blockchainContainer}>
         <View style={styles.blockchainHeader}>
-          <Icon name="verified" size={24} color="#2E7D32" />
+          <Icon name="verified" size={24} color="#366d80ff" />
           <Text style={styles.blockchainTitle}>Blockchain Verified</Text>
         </View>
         <Text style={styles.blockchainText}>
@@ -235,7 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     padding: 24,
     alignItems: 'center',
   },
@@ -401,7 +399,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F5E9',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#2E7D32',
+    borderColor: '#366d80ff',
   },
   blockchainHeader: {
     flexDirection: 'row',
@@ -412,7 +410,7 @@ const styles = StyleSheet.create({
   blockchainTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#366d80ff',
   },
   blockchainText: {
     fontSize: 14,
@@ -421,7 +419,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   blockchainButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',

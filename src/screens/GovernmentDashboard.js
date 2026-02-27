@@ -7,7 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import ApiService from '../services/ApiService';
 
 const GovernmentDashboard = ({ navigation }) => {
@@ -21,8 +21,6 @@ const GovernmentDashboard = ({ navigation }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  const apiService = new ApiService();
-
   useEffect(() => {
     loadData();
   }, []);
@@ -31,8 +29,8 @@ const GovernmentDashboard = ({ navigation }) => {
     setLoading(true);
     try {
       // Load from API or use demo data
-      const alertsData = await apiService.getAlerts() || getDemoAlerts();
-      const batchesData = await apiService.getAllBatches() || getDemoBatches();
+      const alertsData = await ApiService.getAlerts() || getDemoAlerts();
+      const batchesData = await ApiService.getAllBatches() || getDemoBatches();
       
       setAlerts(alertsData);
       setBatches(batchesData);
@@ -326,7 +324,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -393,7 +391,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   sectionLink: {
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -463,7 +461,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   resolveButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -490,7 +488,7 @@ const styles = StyleSheet.create({
   batchId: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#366d80ff',
   },
   batchInfo: {
     gap: 8,

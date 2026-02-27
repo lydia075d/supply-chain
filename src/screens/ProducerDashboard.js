@@ -10,9 +10,9 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import QRCode from 'react-native-qrcode-svg';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import ApiService from '../services/ApiService';
+import QRCode from 'react-native-qrcode-svg';
 
 const ProducerDashboard = ({ navigation }) => {
   const [batches, setBatches] = useState([]);
@@ -23,23 +23,33 @@ const ProducerDashboard = ({ navigation }) => {
   const [productType, setProductType] = useState('');
   const [quantity, setQuantity] = useState('');
 
-  const apiService = new ApiService();
 
   useEffect(() => {
     loadBatches();
   }, []);
 
-  const loadBatches = async () => {
-    setLoading(true);
-    try {
-      const data = await apiService.getProducerBatches();
-      setBatches(data || getDemoBatches());
-    } catch (error) {
-      setBatches(getDemoBatches());
-    } finally {
-      setLoading(false);
-    }
-  };
+const loadBatches = async () => {
+  setLoading(true);
+  try {
+    const data = await ApiService.getProducerBatches();
+    console.log('RAW API DATA:', JSON.stringify(data));
+    const normalized = Array.isArray(data) ? data.map(b => ({
+      batchId: b.batchId || b._id,
+      productType: b.productType || b.product_type || 'Unknown Product',
+      quantity: b.quantity || 0,
+      productionDate: b.productionDate || b.createdAt?.split('T')[0] || '',
+      expiryDate: b.expiryDate || '',
+      status: b.status || 'At Farm',
+      checkpoints: b.checkpoints || 0,
+      currentLocation: b.currentLocation || 'Farm',
+    })) : null;
+    setBatches(normalized || getDemoBatches());
+  } catch (error) {
+    setBatches(getDemoBatches());
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getDemoBatches = () => {
     return [
@@ -96,7 +106,7 @@ const ProducerDashboard = ({ navigation }) => {
     };
 
     try {
-      await apiService.createBatch(newBatch);
+      await ApiService.createBatch(newBatch);
       setBatches([newBatch, ...batches]);
       setShowCreateModal(false);
       setProductType('');
@@ -138,58 +148,49 @@ const ProducerDashboard = ({ navigation }) => {
     </View>
   );
 
-  const renderBatchCard = (batch) => (
-    <TouchableOpacity
-      key={batch.batchId}
-      style={styles.batchCard}
-      onPress={() => navigation.navigate('BatchDetails', { batch })}>
-      <View style={styles.batchHeader}>
-        <Text style={styles.batchId}>{batch.batchId}</Text>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: getStatusColor(batch.status) + '20' },
-          ]}>
-          <Text style={[styles.statusText, { color: getStatusColor(batch.status) }]}>
-            {batch.status}
-          </Text>
-        </View>
+ const renderBatchCard = (batch) => (
+  <TouchableOpacity  // ← remove key from here
+    style={styles.batchCard}
+    onPress={() => navigation.navigate('BatchDetails', { batch })}>
+    <View style={styles.batchHeader}>
+      <Text style={styles.batchId}>{batch.batchId}</Text>
+      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(batch.status) + '20' }]}>
+        <Text style={[styles.statusText, { color: getStatusColor(batch.status) }]}>
+          {batch.status}
+        </Text>
       </View>
-
-      <View style={styles.batchInfo}>
-        <View style={styles.infoRow}>
-          <Icon name="category" size={18} color="#666" />
-          <Text style={styles.infoText}>{batch.productType}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Icon name="scale" size={18} color="#666" />
-          <Text style={styles.infoText}>{batch.quantity} kg</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Icon name="location-on" size={18} color="#666" />
-          <Text style={styles.infoText}>{batch.currentLocation}</Text>
-        </View>
+    </View>
+    <View style={styles.batchInfo}>
+      <View style={styles.infoRow}>
+        <Icon name="category" size={18} color="#666" />
+        <Text style={styles.infoText}>{batch.productType}</Text>
       </View>
-
-      <View style={styles.batchFooter}>
-        <View style={styles.checkpointInfo}>
-          <Icon name="timeline" size={16} color="#2E7D32" />
-          <Text style={styles.checkpointText}>
-            {batch.checkpoints} checkpoints
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.qrButton}
-          onPress={() => {
-            setSelectedBatch(batch);
-            setShowQRModal(true);
-          }}>
-          <Icon name="qr-code" size={20} color="#2E7D32" />
-          <Text style={styles.qrButtonText}>QR Code</Text>
-        </TouchableOpacity>
+      <View style={styles.infoRow}>
+        <Icon name="scale" size={18} color="#666" />
+        <Text style={styles.infoText}>{batch.quantity} kg</Text>
       </View>
-    </TouchableOpacity>
-  );
+      <View style={styles.infoRow}>
+        <Icon name="location-on" size={18} color="#666" />
+        <Text style={styles.infoText}>{batch.currentLocation}</Text>
+      </View>
+    </View>
+    <View style={styles.batchFooter}>
+      <View style={styles.checkpointInfo}>
+        <Icon name="timeline" size={16} color="#366d80ff" />
+        <Text style={styles.checkpointText}>{batch.checkpoints} checkpoints</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.qrButton}
+        onPress={() => {
+          setSelectedBatch(batch);
+          setShowQRModal(true);
+        }}>
+        <Icon name="qr-code" size={20} color="#366d80ff" />
+        <Text style={styles.qrButtonText}>QR Code</Text>
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+);
 
   const totalBatches = batches.length;
   const inTransit = batches.filter((b) => b.status === 'In Transit').length;
@@ -231,8 +232,12 @@ const ProducerDashboard = ({ navigation }) => {
               </Text>
             </View>
           ) : (
-            batches.map(renderBatchCard)
-          )}
+            batches.map((batch) => (
+    <React.Fragment key={batch.batchId}>
+      {renderBatchCard(batch)}
+    </React.Fragment>
+  ))
+)}
         </View>
       </ScrollView>
 
@@ -333,7 +338,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#4fadd9ff',
     padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -404,7 +409,7 @@ const styles = StyleSheet.create({
   batchId: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#366d80ff',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -443,7 +448,7 @@ const styles = StyleSheet.create({
   },
   checkpointText: {
     fontSize: 12,
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontWeight: '600',
   },
   qrButton: {
@@ -457,7 +462,7 @@ const styles = StyleSheet.create({
   },
   qrButtonText: {
     fontSize: 14,
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontWeight: '600',
   },
   emptyState: {
@@ -481,7 +486,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
@@ -527,7 +532,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   createButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
   },
   cancelButtonText: {
     color: '#666',
@@ -572,7 +577,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   qrCloseButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#3a93acff',
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,

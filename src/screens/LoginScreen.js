@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import AuthService from '../services/AuthService';
 
 const LoginScreen = ({ navigation }) => {
@@ -19,8 +19,7 @@ const LoginScreen = ({ navigation }) => {
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const authService = new AuthService();
-
+ 
   const roles = [
     { id: 'producer', label: 'Producer/Farmer', icon: 'agriculture' },
     { id: 'distributor', label: 'Distributor/Retailer', icon: 'local-shipping' },
@@ -37,9 +36,9 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
     try {
       if (isRegister) {
-        await authService.register(email, password, selectedRole);
+        await AuthService.register(email, password, selectedRole);
       } else {
-        await authService.login(email, password);
+        await AuthService.login(email, password);
       }
       navigateToDashboard(selectedRole);
     } catch (error) {
@@ -125,7 +124,7 @@ const LoginScreen = ({ navigation }) => {
                 <Icon
                   name={role.icon}
                   size={24}
-                  color={selectedRole === role.id ? '#fff' : '#2E7D32'}
+                  color={selectedRole === role.id ? '#fff' : '#366d80ff'}
                 />
                 <Text
                   style={[
@@ -178,7 +177,7 @@ const LoginScreen = ({ navigation }) => {
                 key={role.id}
                 style={styles.demoButton}
                 onPress={() => handleDemoLogin(role.id)}>
-                <Icon name={role.icon} size={16} color="#2E7D32" />
+                <Icon name={role.icon} size={16} color="#366d80ff" />
                 <Text style={styles.demoButtonText}>
                   {role.label.split('/')[0]}
                 </Text>
@@ -194,7 +193,7 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
   },
   header: {
     paddingTop: 60,
@@ -269,24 +268,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderWidth: 2,
-    borderColor: '#2E7D32',
+    borderColor: '#366d80ff',
     borderRadius: 8,
     marginBottom: 12,
   },
   roleButtonSelected: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
   },
   roleText: {
     marginLeft: 12,
     fontSize: 16,
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontWeight: '500',
   },
   roleTextSelected: {
     color: '#fff',
   },
   authButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -302,7 +301,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toggleText: {
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontSize: 14,
   },
   divider: {
@@ -346,7 +345,7 @@ const styles = StyleSheet.create({
   demoButtonText: {
     marginLeft: 6,
     fontSize: 12,
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontWeight: '600',
   },
 });

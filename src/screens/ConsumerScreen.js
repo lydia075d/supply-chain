@@ -8,20 +8,20 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { RNCamera } from 'react-native-camera';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import ApiService from '../services/ApiService';
 
 const { width } = Dimensions.get('window');
 
 const ConsumerScreen = ({ navigation }) => {
+  const [permission, requestPermission] = useCameraPermissions();
   const [showScanner, setShowScanner] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
 
-  const apiService = new ApiService();
-
+ 
   const handleBarCodeRead = async ({ data }) => {
     if (scanning) return;
 
@@ -33,7 +33,7 @@ const ConsumerScreen = ({ navigation }) => {
       const batchId = batchData.batchId;
 
       // Verify batch
-      const result = await apiService.verifyBatch(batchId);
+      const result = await ApiService.verifyBatch(batchId);
       
       setVerificationResult(result || getDemoResult(batchId));
       setShowResult(true);
@@ -94,7 +94,7 @@ const ConsumerScreen = ({ navigation }) => {
 
       {/* Main Content */}
       <ScrollView contentContainerStyle={styles.content}>
-        <Icon name="qr-code-scanner" size={120} color="#2E7D32" />
+        <Icon name="qr-code-scanner" size={120} color="#366d80ff" />
         <Text style={styles.title}>Verify Food Product</Text>
         <Text style={styles.subtitle}>
           Scan the QR code on your food product to view its complete journey
@@ -143,11 +143,11 @@ const ConsumerScreen = ({ navigation }) => {
             <View style={{ width: 28 }} />
           </View>
 
-          <RNCamera
-            style={styles.camera}
-            type={RNCamera.Constants.Type.back}
-            onBarCodeRead={handleBarCodeRead}
-            barCodeTypes={[RNCamera.Constants.BarCodeType.qr]}>
+          <CameraView
+  style={styles.camera}
+  facing="back"
+  onBarcodeScanned={handleBarCodeRead}
+  barcodeScannerSettings={{ barcodeTypes: ['qr'] }}>
             <View style={styles.scannerOverlay}>
               <View style={styles.scannerBox}>
                 <View style={[styles.corner, styles.cornerTopLeft]} />
@@ -159,7 +159,7 @@ const ConsumerScreen = ({ navigation }) => {
                 Align QR code within the frame
               </Text>
             </View>
-          </RNCamera>
+          </CameraView>
         </View>
       </Modal>
 
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   scanButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: '#2E7D32',
+    borderColor: '#366d80ff',
   },
   cornerTopLeft: {
     top: 0,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   resultHeader: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -494,12 +494,12 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
   },
   checkpointLine: {
     width: 2,
     flex: 1,
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     marginTop: 4,
   },
   checkpointDetails: {
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   },
   checkpointStatus: {
     fontSize: 12,
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontWeight: '600',
   },
 });

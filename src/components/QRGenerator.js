@@ -40,7 +40,7 @@ const QRGenerator = ({ visible, batch, onClose }) => {
 
           <View style={styles.buttons}>
             <TouchableOpacity style={styles.shareButton}>
-              <Icon name="share" size={20} color="#2E7D32" />
+              <Icon name="share" size={20} color="#366d80ff" />
               <Text style={styles.shareButtonText}>Share</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -131,13 +131,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   shareButtonText: {
-    color: '#2E7D32',
+    color: '#366d80ff',
     fontSize: 16,
     fontWeight: '600',
   },
   closeButton: {
     flex: 1,
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#366d80ff',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',

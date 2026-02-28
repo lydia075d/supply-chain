@@ -7,6 +7,7 @@ connectDB();
 
 const app = express();
 
+
 app.use(cors());
 app.use(express.json());
 
@@ -16,6 +17,9 @@ app.use('/api/batch', require('./routes/batchRoutes'));
 app.use('/api/checkpoint', require('./routes/checkpointRoutes'));
 app.use('/api', require('./routes/governmentRoutes'));
 app.use('/api', require('./routes/verifyRoutes'));
+const aiRoutes = require("./routes/ai");
+console.log("aiRoutes type:", typeof aiRoutes);
+app.use("/api", aiRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log("Server running on port " + process.env.PORT);

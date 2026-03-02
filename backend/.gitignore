@@ -1,0 +1,28 @@
+nano .gitignore
+```
+
+## Common things to add in `.gitignore`
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+
+# Node.js
+node_modules/
+.env
+npm-debug.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Build files
+dist/
+build/

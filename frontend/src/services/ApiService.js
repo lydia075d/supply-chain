@@ -136,13 +136,11 @@ class ApiService {
 
   async verifyBatch(batchId) {
     const response = await fetch(`${API_BASE_URL}/verify/${batchId}`);
-
     return this.handleResponse(response);
   }
 
   async getBatchDetails(batchId) {
     const response = await fetch(`${API_BASE_URL}/batch/batchId/${batchId}`);
-
     return this.handleResponse(response);
   }
 }

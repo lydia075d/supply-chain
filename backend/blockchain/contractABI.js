@@ -84,7 +84,7 @@ const contractABI = [
 ];
 
 // Contract address deployed on Sepolia
-const CONTRACT_ADDRESS = "0xA4cC9b6e5bf1836F7aF7b2dC7A9eF3AC595C6Ecf";
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 
 module.exports = {
   contractABI,

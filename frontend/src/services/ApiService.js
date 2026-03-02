@@ -1,110 +1,149 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import API_BASE_URL from './config';
-
-const API_URL = API_BASE_URL;
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import API_BASE_URL from "./config";
 
 class ApiService {
-
+  // 🔑 Get Token
   async getAuthToken() {
     try {
-      return await AsyncStorage.getItem('authToken');
+      return await AsyncStorage.getItem("authToken");
     } catch (error) {
+      console.log("Error getting token:", error);
       return null;
     }
   }
 
+  // 💾 Save Token
   async setAuthToken(token) {
     try {
-      await AsyncStorage.setItem('authToken', token);
+      await AsyncStorage.setItem("authToken", token);
     } catch (error) {
-      console.error('Error saving token:', error);
+      console.error("Error saving token:", error);
     }
   }
 
-  async _handleResponse(response) {
+  // 🧠 Common Headers
+  getHeaders(token, isJson = true) {
+    return {
+      ...(isJson && { "Content-Type": "application/json" }),
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+  }
+
+  // ⚠️ Handle Response
+  async handleResponse(response) {
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+
     if (!response.ok) {
-      let message = `Request failed with status ${response.status}`;
-      try {
-        const err = await response.json();
-        message = err.message || err.error || message;
-      } catch (_) {}
-      throw new Error(message);
+      throw new Error(data.message || `Error ${response.status}`);
     }
-    return response.json();
+
+    return data;
   }
 
-  // Producer APIs
+  // =========================
+  // 🧑‍🌾 PRODUCER APIs
+  // =========================
+
   async createBatch(batchData) {
     const token = await this.getAuthToken();
-    const response = await fetch(`${API_URL}/batch/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+    if (!token) throw new Error("User not logged in");
+
+    const url = `${API_BASE_URL}/batch/create`;
+    console.log("CREATE BATCH URL:", url);
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: this.getHeaders(token),
       body: JSON.stringify(batchData),
     });
-    return this._handleResponse(response);
+
+    return this.handleResponse(response);
   }
 
   async getProducerBatches() {
     const token = await this.getAuthToken();
-    const response = await fetch(`${API_URL}/batch/producer/batches`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+    if (!token) throw new Error("User not logged in");
+
+    const response = await fetch(`${API_BASE_URL}/batch/producer/batches`, {
+      headers: this.getHeaders(token, false),
     });
-    return this._handleResponse(response);
+
+    return this.handleResponse(response);
   }
 
-  // Distributor APIs
+  // =========================
+  // 🚚 DISTRIBUTOR APIs
+  // =========================
+
   async recordCheckpoint(checkpointData) {
     const token = await this.getAuthToken();
-    const response = await fetch(`${API_URL}/checkpoint`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+    if (!token) throw new Error("User not logged in");
+
+    const response = await fetch(`${API_BASE_URL}/checkpoint`, {
+      method: "POST",
+      headers: this.getHeaders(token),
       body: JSON.stringify(checkpointData),
     });
-    return this._handleResponse(response);
+
+    return this.handleResponse(response);
   }
 
-  // FIX: fetch recent checkpoints for distributor dashboard
   async getDistributorCheckpoints() {
     const token = await this.getAuthToken();
-    const response = await fetch(`${API_URL}/checkpoint/recent`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+    if (!token) throw new Error("User not logged in");
+
+    const response = await fetch(`${API_BASE_URL}/checkpoint/recent`, {
+      headers: this.getHeaders(token, false),
     });
-    return this._handleResponse(response);
+
+    return this.handleResponse(response);
   }
 
-  // Government APIs
+  // =========================
+  // 🏛 GOVERNMENT APIs
+  // =========================
+
   async getAllBatches() {
     const token = await this.getAuthToken();
-    const response = await fetch(`${API_URL}/government/batches`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+    if (!token) throw new Error("User not logged in");
+
+    const response = await fetch(`${API_BASE_URL}/government/batches`, {
+      headers: this.getHeaders(token, false),
     });
-    return this._handleResponse(response);
+
+    return this.handleResponse(response);
   }
 
   async getAlerts() {
     const token = await this.getAuthToken();
-    const response = await fetch(`${API_URL}/government/alerts`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+    if (!token) throw new Error("User not logged in");
+
+    const response = await fetch(`${API_BASE_URL}/government/alerts`, {
+      headers: this.getHeaders(token, false),
     });
-    return this._handleResponse(response);
+
+    return this.handleResponse(response);
   }
 
-  // Consumer APIs
+  // =========================
+  // 👤 CONSUMER APIs
+  // =========================
+
   async verifyBatch(batchId) {
-    const response = await fetch(`${API_URL}/verify/${batchId}`);
-    return this._handleResponse(response);
+    const response = await fetch(`${API_BASE_URL}/verify/${batchId}`);
+
+    return this.handleResponse(response);
   }
 
-  // FIX: use batchId string route, not MongoDB _id
   async getBatchDetails(batchId) {
-    const response = await fetch(`${API_URL}/batch/batchId/${batchId}`);
-    return this._handleResponse(response);
+    const response = await fetch(`${API_BASE_URL}/batch/batchId/${batchId}`);
+
+    return this.handleResponse(response);
   }
 }
 

@@ -1,17 +1,18 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Checkpoint = require('../models/Checkpoint');
-const Alert = require('../models/Alert');
-const Batch = require('../models/Batch');
-const auth = require('../middleware/authMiddleware');
+const Checkpoint = require("../models/Checkpoint");
+const Alert = require("../models/Alert");
+const Batch = require("../models/Batch");
+const auth = require("../middleware/authMiddleware");
+const blockchainService = require("../blockchain/service");
 
 // POST / — record a new checkpoint
-router.post('/', auth, async (req, res) => {
+router.post("/", auth, async (req, res) => {
   try {
     const { batchId, location, timestamp, scannerRole } = req.body;
 
     if (!batchId) {
-      return res.status(400).json({ error: 'batchId is required' });
+      return res.status(400).json({ error: "batchId is required" });
     }
 
     const batch = await Batch.findOne({ batchId });
@@ -19,7 +20,12 @@ router.post('/', auth, async (req, res) => {
       return res.status(404).json({ error: `Batch not found: ${batchId}` });
     }
 
-    const checkpoint = new Checkpoint({ batchId, location, timestamp, scannerRole });
+    const checkpoint = new Checkpoint({
+      batchId,
+      location,
+      timestamp,
+      scannerRole,
+    });
     await checkpoint.save();
 
     // Update batch checkpoint count and location
@@ -29,9 +35,9 @@ router.post('/', auth, async (req, res) => {
         $inc: { checkpoints: 1 },
         $set: {
           currentLocation: `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`,
-          status: 'In Transit',
+          status: "In Transit",
         },
-      }
+      },
     );
 
     let anomalyDetected = false;
@@ -40,9 +46,35 @@ router.post('/', auth, async (req, res) => {
 
     if (req.body.temperature > 10) {
       anomalyDetected = true;
-      anomalyType = 'Temperature Anomaly';
+      anomalyType = "Temperature Anomaly";
       anomalyDetails = `Temperature ${req.body.temperature}°C exceeds safe threshold of 10°C.`;
       await new Alert({ message: anomalyDetails, batchId, timestamp }).save();
+    }
+
+    // Record checkpoint to blockchain (if private key is configured)
+    let blockchainResult = null;
+    if (process.env.BLOCKCHAIN_PRIVATE_KEY) {
+      try {
+        const locationName = `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+        blockchainResult = await blockchainService.recordCheckpointToBlockchain(
+          batchId,
+          location.latitude,
+          location.longitude,
+          scannerRole || "distributor",
+          locationName,
+          process.env.BLOCKCHAIN_PRIVATE_KEY,
+        );
+        console.log(
+          "[Checkpoint] Blockchain recording result:",
+          blockchainResult,
+        );
+      } catch (bcError) {
+        console.error("[Checkpoint] Blockchain error:", bcError.message);
+      }
+    } else {
+      console.log(
+        "[Checkpoint] BLOCKCHAIN_PRIVATE_KEY not configured - skipping blockchain recording",
+      );
     }
 
     res.json({
@@ -53,17 +85,29 @@ router.post('/', auth, async (req, res) => {
       anomalyDetected,
       anomalyType,
       anomalyDetails,
+      blockchain: blockchainResult
+        ? {
+            recorded: blockchainResult.success,
+            transactionHash: blockchainResult.transactionHash,
+            blockNumber: Number(blockchainResult.blockNumber),
+            blockHash: blockchainResult.blockHash,
+            gasUsed: Number(blockchainResult.gasUsed),
+          }
+        : {
+            recorded: false,
+            message: "Blockchain not configured",
+          },
     });
   } catch (err) {
-    console.error('[Checkpoint] Error:', err.message);
+    console.error("[Checkpoint] Error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 // GET /recent — last 20 checkpoints scanned by this distributor
-router.get('/recent', auth, async (req, res) => {
+router.get("/recent", auth, async (req, res) => {
   try {
-    const checkpoints = await Checkpoint.find({ scannerRole: 'distributor' })
+    const checkpoints = await Checkpoint.find({ scannerRole: "distributor" })
       .sort({ timestamp: -1 })
       .limit(20);
 
@@ -73,12 +117,12 @@ router.get('/recent', auth, async (req, res) => {
         const batch = await Batch.findOne({ batchId: cp.batchId });
         return {
           batchId: cp.batchId,
-          productType: batch?.productType || 'Unknown',
+          productType: batch?.productType || "Unknown",
           location: `${cp.location.latitude.toFixed(4)}, ${cp.location.longitude.toFixed(4)}`,
           timestamp: cp.timestamp,
           anomaly: false,
         };
-      })
+      }),
     );
 
     res.json(enriched);

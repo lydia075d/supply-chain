@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "ethers": "^6.16.0",
+    "expo-barcode-scanner": "^13.0.1",
+    "expo-location": "^55.1.2",
+    "expo-secure-store": "^55.0.8",
+    "react-native-qrcode-svg": "^6.3.21"
+  }
+}

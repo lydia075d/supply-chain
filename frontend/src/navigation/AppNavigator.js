@@ -1,61 +1,33 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Import all screens
-import LoginScreen from '../screens/LoginScreen';
-import ProducerDashboard from '../screens/ProducerDashboard';
+import LoginScreen         from '../screens/LoginScreen';
+import ProducerDashboard   from '../screens/ProducerDashboard';
 import DistributorDashboard from '../screens/DistributorDashboard';
+import RetailerDashboard   from '../screens/RetailerDashboard';   // NEW
 import GovernmentDashboard from '../screens/GovernmentDashboard';
-import ConsumerScreen from '../screens/ConsumerScreen';
-import BatchDetailsScreen from '../screens/BatchDetailsScreen';
+import ConsumerScreen      from '../screens/ConsumerScreen';
+import BatchDetailsScreen  from '../screens/BatchDetailsScreen';
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 
-const AppNavigator = () => {
+export default function AppNavigator() {
   return (
-    <Stack.Navigator
-      initialRouteName="Login"
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: '#366d80ff',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      }}>
-      <Stack.Screen 
-        name="Login" 
-        component={LoginScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="ProducerDashboard" 
-        component={ProducerDashboard}
-        options={{ title: 'Producer Dashboard', headerLeft: null }}
-      />
-      <Stack.Screen 
-        name="DistributorDashboard" 
-        component={DistributorDashboard}
-        options={{ title: 'Distributor Dashboard', headerLeft: null }}
-      />
-      <Stack.Screen 
-        name="GovernmentDashboard" 
-        component={GovernmentDashboard}
-        options={{ title: 'Government Authority', headerLeft: null }}
-      />
-      <Stack.Screen 
-        name="ConsumerScreen" 
-        component={ConsumerScreen}
-        options={{ title: 'Verify Product', headerLeft: null }}
-      />
-      <Stack.Screen 
-        name="BatchDetails" 
-        component={BatchDetailsScreen}
-        options={{ title: 'Batch Journey' }}
-      />
-    </Stack.Navigator>
-  );
-};
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Login"
+        screenOptions={{ headerShown: false }}>
 
-export default AppNavigator;
+        <Stack.Screen name="Login"        component={LoginScreen} />
+        <Stack.Screen name="Producer"     component={ProducerDashboard} />
+        <Stack.Screen name="Distributor"  component={DistributorDashboard} />
+        <Stack.Screen name="Retailer"     component={RetailerDashboard} />   {/* NEW */}
+        <Stack.Screen name="Government"   component={GovernmentDashboard} />
+        <Stack.Screen name="Consumer"     component={ConsumerScreen} />
+        <Stack.Screen name="BatchDetails" component={BatchDetailsScreen} />
+
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

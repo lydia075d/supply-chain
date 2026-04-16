@@ -1,3 +1,2 @@
-const API_BASE_URL = "http://192.168.208.109:5000/api"; // ✅ MUST include /api and NO trailing slash
-
+const API_BASE_URL = "http://10.141.241.22:3000/api";
 export default API_BASE_URL;

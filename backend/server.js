@@ -3,32 +3,35 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 
-// Connect to MongoDB
-connectDB();
+connectDB().then(() => {
+  console.log('MongoDB connected');
+
+  // NEW: run bulk AI fraud scan every 1 hour
+  const { runBulkFraudScan } = require('./ai/fraudBridge');
+  setInterval(() => {
+    console.log('[AI] Running scheduled fraud scan...');
+    runBulkFraudScan();
+  }, 60 * 60 * 1000);
+
+  // NEW: also run once on startup after 5 seconds
+  setTimeout(() => runBulkFraudScan(), 5000);
+}).catch(err => console.error('MongoDB error:', err));
 
 const app = express();
 
-// Middleware
-app.use(
-  cors({
-    origin: "*", // Allow all origins (for development)
-  }),
-);
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// Routes
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/batch", require("./routes/batchRoutes"));
+// Your original routes — UNCHANGED
+app.use("/api/auth",       require("./routes/authRoutes"));
+app.use("/api/batch",      require("./routes/batchRoutes"));
 app.use("/api/checkpoint", require("./routes/checkpointRoutes"));
-app.use("/api", require("./routes/governmentRoutes"));
-app.use("/api", require("./routes/verifyRoutes"));
+app.use("/api",            require("./routes/governmentRoutes"));
+app.use("/api",            require("./routes/verifyRoutes"));
+app.use("/api",            require("./routes/ai"));
 
-// AI Routes
-const aiRoutes = require("./routes/ai");
-app.use("/api", aiRoutes);
+// NEW: retailer routes
+app.use("/api/retail",     require("./routes/retailRoutes"));
 
-// Start Server
-const PORT = process.env.PORT || 5000; // ✅ fallback to 5000 if PORT missing in .env
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

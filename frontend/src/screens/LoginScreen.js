@@ -23,6 +23,7 @@ const LoginScreen = ({ navigation }) => {
   const roles = [
     { id: 'producer', label: 'Producer/Farmer', icon: 'agriculture' },
     { id: 'distributor', label: 'Distributor/Retailer', icon: 'local-shipping' },
+    { id: 'retailer', label: 'Retailer', icon: 'store' },
     { id: 'government', label: 'Government Authority', icon: 'security' },
     { id: 'consumer', label: 'Consumer (Verify)', icon: 'shopping-bag' },
   ];
@@ -53,23 +54,26 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const navigateToDashboard = (role) => {
-    switch (role) {
-      case 'producer':
-        navigation.replace('ProducerDashboard');
-        break;
-      case 'distributor':
-        navigation.replace('DistributorDashboard');
-        break;
-      case 'government':
-        navigation.replace('GovernmentDashboard');
-        break;
-      case 'consumer':
-        navigation.replace('ConsumerScreen');
-        break;
-      default:
-        navigation.replace('ProducerDashboard');
-    }
-  };
+  switch (role) {
+    case 'producer':
+      navigation.replace('Producer');
+      break;
+    case 'distributor':
+      navigation.replace('Distributor');
+      break;
+    case 'government':
+      navigation.replace('Government');
+      break;
+    case 'retailer':
+      navigation.replace('Retailer');
+      break;
+    case 'consumer':
+      navigation.replace('Consumer');
+      break;
+    default:
+      navigation.replace('Producer');
+  }
+};
 
   return (
     <View style={styles.container}>

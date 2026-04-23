@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const BatchSchema = new mongoose.Schema({
-  batchId: { type: String, required: true },
+  batchId: { type: String,unique: true, required: true },
   productType: { type: String, required: true },
   quantity: { type: Number, required: true },
   productionDate: { type: String },
@@ -14,6 +14,17 @@ const BatchSchema = new mongoose.Schema({
   fssaiLicense: { type: String },
   hasIssues: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
+  approvalStatus: {
+  type: String,
+  enum: ['PENDING', 'APPROVED', 'REJECTED'],
+  default: 'PENDING'
+},
+approvedAt: {
+  type: Date
+},
+approvedBy: {
+  type: String
+}
 });
 
 module.exports = mongoose.model('Batch', BatchSchema);

@@ -569,6 +569,115 @@ def simulate_blockchain_api_call(alert: dict) -> dict:
 
 
 # ─────────────────────────────────────────────
+# NEW: MONGODB SCAN ENDPOINT
+# ─────────────────────────────────────────────
+from pymongo import MongoClient
+
+@app.get("/scan-all")
+def scan_all():
+    """Fetch real batches from MongoDB, scan for fraud, and write alerts back to DB."""
+    try:
+        client = MongoClient("mongodb://127.0.0.1:27017/foodTracer")
+        db     = client["foodTracer"]
+        batches     = list(db.batches.find({}, {"_id": 0}))
+        checkpoints = list(db.checkpoints.find({}, {"_id": 0}))
+
+        if not batches:
+            client.close()
+            return {"total_scanned": 0, "fraud_detected": 0, "alerts": []}
+
+        df = pd.DataFrame(batches)
+
+        # Map MongoDB field names → model field names
+        df = df.rename(columns={
+            "batchId"        : "Batch_ID",
+            "productType"    : "Product_Name",
+            "producerEmail"  : "Producer_Name",
+            "quantity"       : "Quantity",
+            "productionDate" : "Production_Date",
+            "expiryDate"     : "Expiry_Date",
+            "status"         : "Current_Status",
+            "currentLocation": "Last_Location",
+            "createdAt"      : "Timestamp",
+        })
+
+        # Fill columns the model needs that may not exist in your schema
+        for col, default in {
+            "Transport_Time"      : 24,
+            "Checkpoint_Count"    : 1,
+            "Price"               : 100,
+            "Expected_Destination": "Unknown",
+            "Distributor_ID"      : "DIST-00",
+        }.items():
+            if col not in df.columns:
+                df[col] = default
+
+        # Use real checkpoint counts from checkpoints collection
+        if checkpoints:
+            cp_df     = pd.DataFrame(checkpoints)
+            cp_counts = cp_df.groupby("batchId").size().reset_index(name="cp_count")
+            df        = df.merge(cp_counts, left_on="Batch_ID",
+                                 right_on="batchId", how="left")
+            df["Checkpoint_Count"] = df["cp_count"].fillna(1).astype(int)
+            df = df.drop(columns=["cp_count", "batchId"], errors="ignore")
+
+        # Run the model
+        df_feat = engineer_features(df)
+        X       = df_feat[FEATURE_COLS].fillna(0)
+        probs   = model.predict_proba(X)[:, 1]
+        preds   = model.predict(X)
+
+        alerts      = []
+        now_iso     = datetime.now()
+
+        for i, (pred, prob) in enumerate(zip(preds, probs)):
+            if pred == 1:
+                batch_id    = str(df.iloc[i].get("Batch_ID", "?"))
+                product     = str(df.iloc[i].get("Product_Name", "?"))
+                alert_level = get_alert_level(prob)
+                fraud_types = detect_fraud_type(df_feat.iloc[i])
+
+                alert_doc = {
+                    "batch_id"         : batch_id,
+                    "product"          : product,
+                    "fraud_probability": round(float(prob), 4),
+                    "alert_level"      : alert_level,
+                    "fraud_types"      : fraud_types,
+                    "timestamp"        : now_iso.isoformat(),
+                }
+                alerts.append(alert_doc)
+
+                # ── Write into the alerts collection so the frontend can read it ──
+                # Use batchId as the key: upsert so re-running doesn't create duplicates
+                db.alerts.update_one(
+                    {"batchId": batch_id},          # filter
+                    {"$set": {                       # update
+                        "batchId"          : batch_id,
+                        "message"          : f"🚨 AI Alert [{alert_level}]: {', '.join(fraud_types)}",
+                        "type"             : ", ".join(fraud_types),
+                        "severity"         : alert_level.lower(),
+                        "fraudProbability" : round(float(prob), 4),
+                        "product"          : product,
+                        "resolved"         : False,
+                        "time"             : now_iso,
+                        "source"           : "scan-all",
+                    }},
+                    upsert=True,                     # create if not exists
+                )
+
+        client.close()
+
+        return {
+            "total_scanned" : len(df),
+            "fraud_detected": len(alerts),
+            "alerts"        : alerts,
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ─────────────────────────────────────────────
 # 7. MAIN — DEMO RUN
 # ─────────────────────────────────────────────
 if __name__ == '__main__':

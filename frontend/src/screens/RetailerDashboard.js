@@ -1,6 +1,3 @@
-// screens/RetailerDashboard.js
-// New screen for retailers — see stock, confirm receipt, view fraud alerts
-
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,

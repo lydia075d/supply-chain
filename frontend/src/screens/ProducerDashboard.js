@@ -38,16 +38,17 @@ const ProducerDashboard = ({ navigation }) => {
       }
       // FIX: createdAt is a Date object from MongoDB — convert with toISOString(), not .split() on raw value
       const normalized = data.map(b => ({
-        batchId: b.batchId || b._id,
-        productType: b.productType || 'Unknown Product',
-        quantity: b.quantity || 0,
-        productionDate: b.productionDate ||
-          (b.createdAt ? new Date(b.createdAt).toISOString().split('T')[0] : ''),
-        expiryDate: b.expiryDate || '',
-        status: b.status || 'At Farm',
-        checkpoints: b.checkpoints || 0,
-        currentLocation: b.currentLocation || 'Farm',
-      }));
+  batchId: b.batchId || b._id,
+  productType: b.productType || 'Unknown Product',
+  quantity: b.quantity || 0,
+  productionDate: b.productionDate ||
+    (b.createdAt ? new Date(b.createdAt).toISOString().split('T')[0] : ''),
+  expiryDate: b.expiryDate || '',
+  status: b.status || 'At Farm',
+  approvalStatus: b.approvalStatus || 'PENDING', // ✅ ADD THIS
+  checkpoints: b.checkpoints || 0,
+  currentLocation: b.currentLocation || 'Farm',
+}));
       setBatches(normalized);
     } catch (error) {
       console.error('[Producer] Failed to load batches:', error.message);
@@ -76,28 +77,37 @@ const ProducerDashboard = ({ navigation }) => {
     };
 
     try {
-      const saved = await ApiService.createBatch(newBatch);
-      // Use server response to get the saved batch (includes _id etc.)
-      const normalized = {
-        batchId: saved.batchId || newBatch.batchId,
-        productType: saved.productType,
-        quantity: saved.quantity,
-        productionDate: saved.productionDate ||
-          (saved.createdAt ? new Date(saved.createdAt).toISOString().split('T')[0] : newBatch.productionDate),
-        expiryDate: saved.expiryDate || newBatch.expiryDate,
-        status: saved.status || 'At Farm',
-        checkpoints: saved.checkpoints || 0,
-        currentLocation: saved.currentLocation || 'Farm',
-      };
-      setBatches(prev => [normalized, ...prev]);
-      setShowCreateModal(false);
-      setProductType('');
-      setQuantity('');
-      setSelectedBatch(normalized);
-      setShowQRModal(true);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create batch: ' + error.message);
-    }
+  const saved = await ApiService.createBatch(newBatch);
+
+  const normalized = {
+    batchId: saved.batchId || newBatch.batchId,
+    productType: saved.productType,
+    quantity: saved.quantity,
+    productionDate: saved.productionDate ||
+      (saved.createdAt ? new Date(saved.createdAt).toISOString().split('T')[0] : newBatch.productionDate),
+    expiryDate: saved.expiryDate || newBatch.expiryDate,
+    status: saved.status || 'At Farm',
+    approvalStatus: saved.approvalStatus || 'PENDING', // ✅ ADD
+    checkpoints: saved.checkpoints || 0,
+    currentLocation: saved.currentLocation || 'Farm',
+  };
+
+  setBatches(prev => [normalized, ...prev]);
+
+  setShowCreateModal(false);
+  setProductType('');
+  setQuantity('');
+
+  // ❌ REMOVE QR POPUP
+  // setSelectedBatch(normalized);
+  // setShowQRModal(true);
+
+  // ✅ CORRECT PLACE
+  Alert.alert("Batch Created", "Waiting for government approval");
+
+} catch (error) {
+  Alert.alert('Error', 'Failed to create batch: ' + error.message);
+}
   };
 
   const getStatusColor = (status) => {
@@ -126,6 +136,9 @@ const ProducerDashboard = ({ navigation }) => {
       <View style={styles.batchHeader}>
         <Text style={styles.batchId}>{batch.batchId}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(batch.status) + '20' }]}>
+          <Text style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+  Approval: {batch.approvalStatus}
+</Text>
           <Text style={[styles.statusText, { color: getStatusColor(batch.status) }]}>
             {batch.status}
           </Text>
@@ -152,10 +165,14 @@ const ProducerDashboard = ({ navigation }) => {
         </View>
         <TouchableOpacity
           style={styles.qrButton}
-          onPress={() => {
-            setSelectedBatch(batch);
-            setShowQRModal(true);
-          }}>
+         onPress={() => {
+  if (batch.approvalStatus !== 'APPROVED') {
+    Alert.alert("Not Approved", "QR available only after government approval");
+    return;
+  }
+  setSelectedBatch(batch);
+  setShowQRModal(true);
+}}>
           <Icon name="qr-code" size={20} color="#366d80ff" />
           <Text style={styles.qrButtonText}>QR Code</Text>
         </TouchableOpacity>

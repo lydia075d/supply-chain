@@ -8,7 +8,7 @@ router.post('/create', auth, async (req, res) => {
   try {
     const batch = new Batch({
       ...req.body,
-      producerEmail: req.user.email,
+      producerEmail: req.user.email, approvalStatus: 'PENDING' 
     });
     await batch.save();
     res.json(batch);
@@ -56,5 +56,12 @@ router.get('/batchId/:batchId', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+router.get('/all', auth, async (req, res) => {
+  try {
+    const batches = await Batch.find().sort({ createdAt: -1 });
+    res.json(batches);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 module.exports = router;

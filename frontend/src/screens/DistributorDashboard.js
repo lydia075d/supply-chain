@@ -18,14 +18,12 @@ const DistributorDashboard = ({ navigation }) => {
   const [stats, setStats]               = useState({ todayScans: 0, totalScans: 0, anomalies: 0 });
   const [loadingScans, setLoadingScans] = useState(false);
 
-  // NEW ─ dispatch modal state
   const [showDispatch, setShowDispatch]       = useState(false);
   const [dispatchBatchId, setDispatchBatchId] = useState('');
   const [splits, setSplits]                   = useState([
     { retailerEmail: '', retailerName: '', quantity: '' },
   ]);
   const [dispatching, setDispatching]         = useState(false);
-  // END NEW
 
   useEffect(() => { loadRecentScans(); }, []);
 
@@ -49,7 +47,6 @@ const DistributorDashboard = ({ navigation }) => {
     }
   };
 
-  // ── original QR scan logic (unchanged) ─────────────────
   const handleBarCodeRead = async ({ data }) => {
     if (scanning) return;
     setScanning(true);
@@ -95,10 +92,7 @@ const DistributorDashboard = ({ navigation }) => {
       Alert.alert('✅ Success', 'Checkpoint recorded!', [{ text: 'OK' }]);
     }
   };
-  // ── end original QR scan logic ─────────────────────────
-
-
-  // NEW ── dispatch helpers ─────────────────────────────────
+ 
   const addSplit = () => {
     setSplits(prev => [...prev, { retailerEmail: '', retailerName: '', quantity: '' }]);
   };
@@ -123,16 +117,24 @@ const DistributorDashboard = ({ navigation }) => {
     setDispatching(true);
     try {
       const location = await getCurrentLocation();
+          console.log('[Dispatch] Raw location:', JSON.stringify(location));
+
       const payload  = {
         parentBatchId: dispatchBatchId.trim(),
         splits: splits.map(s => ({
           retailerEmail   : s.retailerEmail.trim(),
           retailerName    : s.retailerName.trim() || 'Retailer',
           quantity        : Number(s.quantity),
-          retailerLocation: '',
-          location,
+          location: {                               
+      latitude : location.latitude,
+      longitude: location.longitude,
+      accuracy : location.accuracy,
+    },
         })),
       };
+          console.log('[Dispatch] Payload:', JSON.stringify(payload));
+
+          
       await ApiService.dispatchToRetailers(payload);
       Alert.alert('✅ Dispatched', `Batch split to ${splits.length} retailer(s) successfully.`);
       setShowDispatch(false);
@@ -145,8 +147,7 @@ const DistributorDashboard = ({ navigation }) => {
       setDispatching(false);
     }
   };
-  // END NEW ─────────────────────────────────────────────────
-
+ 
 
   const renderStatCard = (title, value, icon, color) => (
     <View style={[styles.statCard, { borderLeftColor: color }]}>
@@ -356,7 +357,6 @@ const DistributorDashboard = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  // ── original styles (unchanged) ───────────────────────
   container          : { flex: 1, backgroundColor: '#f5f5f5' },
   header             : { backgroundColor: '#366d80ff', padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerTitle        : { fontSize: 22, fontWeight: 'bold', color: '#fff' },

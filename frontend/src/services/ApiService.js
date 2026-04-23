@@ -1,201 +1,302 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import API_BASE_URL from "./config";
 
-// ── Change this to your actual backend URL ─────────────
-const BASE_URL = 'http://192.168.1.100:3000/api';  // update with your IP
+// ── Token helpers ────────────────────────────────────────────────────────────
 
 const getToken = async () => {
-  return await AsyncStorage.getItem('token');
+  try {
+    return await AsyncStorage.getItem("authToken");
+  } catch (error) {
+    console.error("Error getting token:", error);
+    return null;
+  }
 };
 
-const authHeaders = async () => {
+const authHeaders = async (isJson = true) => {
   const token = await getToken();
+
+  if (!token) {
+    console.log("❌ NO TOKEN FOUND");
+    throw new Error("No token found");
+  }
+
   return {
-    'Content-Type' : 'application/json',
-    'Authorization': `Bearer ${token}`,
+    ...(isJson && { "Content-Type": "application/json" }),
+    Authorization: `Bearer ${token}`,
   };
 };
 
+// ── Safe JSON parser / error handler ────────────────────────────────────────
+
+const safeJson = async (res) => {
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.error("Invalid JSON response:", text);
+    throw new Error("Invalid server response");
+  }
+
+  if (!res.ok) {
+    console.log("❌ API ERROR:", res.status, data);
+
+    if (res.status === 401) {
+      await AsyncStorage.removeItem("authToken");
+      throw new Error("Session expired. Please login again.");
+    }
+
+    throw new Error(data.message || data.error || "Request failed");
+  }
+
+  return data;
+};
+
+// ── ApiService ───────────────────────────────────────────────────────────────
+
 const ApiService = {
 
-  // ════════════════════════════════════════════════════
-  //  YOUR EXISTING METHODS — DO NOT CHANGE
-  // ════════════════════════════════════════════════════
+  // ── Auth helpers (class version) ─────────────────────────────────────────
+
+  /** Save auth token to storage */
+  setAuthToken: async (token) => {
+    try {
+      await AsyncStorage.setItem("authToken", token);
+    } catch (error) {
+      console.error("Error saving token:", error);
+    }
+  },
+
+  // ── Auth ─────────────────────────────────────────────────────────────────
 
   login: async (email, password) => {
-    const res = await fetch(`${BASE_URL}/login`, {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ email, password }),
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
     });
-    return res.json();
+    return safeJson(res);
   },
 
   register: async (email, password, role) => {
-    const res = await fetch(`${BASE_URL}/register`, {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ email, password, role }),
+    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, role }),
     });
-    return res.json();
+    return safeJson(res);
   },
+
+  // ── Producer ─────────────────────────────────────────────────────────────
 
   createBatch: async (batchData) => {
     const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/create`, {
-      method : 'POST',
+    const url = `${API_BASE_URL}/batch/create`;
+    console.log("CREATE BATCH URL:", url);
+    const res = await fetch(url, {
+      method: "POST",
       headers,
-      body   : JSON.stringify(batchData),
+      body: JSON.stringify(batchData),
     });
-    return res.json();
+    return safeJson(res);
   },
 
   getProducerBatches: async () => {
-    const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/producer/batches`, { headers });
-    return res.json();
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/batch/producer/batches`, { headers });
+    return safeJson(res);
   },
 
-  getBatchById: async (batchId) => {
-    const res = await fetch(`${BASE_URL}/batchId/${batchId}`);
-    return res.json();
-  },
+  // ── Distributor ──────────────────────────────────────────────────────────
 
   recordCheckpoint: async (checkpointData) => {
     const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/checkpoints`, {
-      method : 'POST',
+    const res = await fetch(`${API_BASE_URL}/checkpoint`, {
+      method: "POST",
       headers,
-      body   : JSON.stringify(checkpointData),
+      body: JSON.stringify(checkpointData),
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Checkpoint failed');
-    }
-    return res.json();
+    const data = await safeJson(res);
+    if (!res.ok) throw new Error(data.error || "Checkpoint failed");
+    return data;
   },
 
   getDistributorCheckpoints: async () => {
-    const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/checkpoints/recent`, { headers });
-    return res.json();
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/checkpoint/recent`, { headers });
+    return safeJson(res);
   },
 
+  // ── Retail ───────────────────────────────────────────────────────────────
 
-  // ════════════════════════════════════════════════════
-  //  NEW — RETAILER METHODS
-  // ════════════════════════════════════════════════════
-
-  // Distributor dispatches a batch to multiple retailers
   dispatchToRetailers: async (payload) => {
     const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/retail/dispatch`, {
-      method : 'POST',
+    const res = await fetch(`${API_BASE_URL}/retail/dispatch`, {
+      method: "POST",
       headers,
-      body   : JSON.stringify(payload),
+      body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Dispatch failed');
-    }
-    return res.json();
+    const data = await safeJson(res);
+    if (!res.ok) throw new Error(data.error || "Dispatch failed");
+    return data;
   },
 
-  // Retailer gets their assigned stock
   getRetailerStock: async () => {
-    const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/retail/my-stock`, { headers });
-    return res.json();
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/retail/my-stock`, { headers });
+    const data = await safeJson(res);
+    return Array.isArray(data) ? data : [];
   },
 
-  // Retailer confirms receipt of a batch
   confirmRetailReceipt: async (retailBatchId, location) => {
     const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/retail/${retailBatchId}/receive`, {
-      method : 'PATCH',
+    const res = await fetch(`${API_BASE_URL}/retail/${retailBatchId}/receive`, {
+      method: "PATCH",
       headers,
-      body   : JSON.stringify({ location }),
+      body: JSON.stringify({ location }),
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Receipt confirmation failed');
-    }
-    return res.json();
+    const data = await safeJson(res);
+    if (!res.ok) throw new Error(data.error || "Receipt confirmation failed");
+    return data;
   },
 
-  // Update retail batch status (On Shelf / Sold Out)
   updateRetailStatus: async (retailBatchId, status, quantityRemaining) => {
     const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/retail/${retailBatchId}/status`, {
-      method : 'PATCH',
+    const res = await fetch(`${API_BASE_URL}/retail/${retailBatchId}/status`, {
+      method: "PATCH",
       headers,
-      body   : JSON.stringify({ status, quantityRemaining }),
+      body: JSON.stringify({ status, quantityRemaining }),
     });
-    return res.json();
+    return safeJson(res);
   },
 
-  // Get retailer dashboard stats
   getRetailerStats: async () => {
-    const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/retail/stats`, { headers });
-    return res.json();
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/retail/stats`, { headers });
+    return safeJson(res);
   },
 
-  // Get distributor's outgoing dispatches
   getDistributorDispatches: async () => {
-    const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/retail/distributor/dispatches`, { headers });
-    return res.json();
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/retail/distributor/dispatches`, { headers });
+    return safeJson(res);
   },
 
+  // ── Government ───────────────────────────────────────────────────────────
 
-  // ════════════════════════════════════════════════════
-  //  NEW — AI / FRAUD ALERT METHODS
-  // ════════════════════════════════════════════════════
-
-  // Get all fraud alerts (for government / admin dashboard)
-  getFraudAlerts: async (level = '', status = '') => {
-    const headers = await authHeaders();
-    const params  = new URLSearchParams();
-    if (level)  params.append('level', level);
-    if (status) params.append('status', status);
-    const res = await fetch(`${BASE_URL}/alerts?${params}`, { headers });
-    return res.json();
+  /** Fetch all batches via government endpoint */
+  getAllBatches: async () => {
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/government/batches`, { headers });
+    return safeJson(res);
   },
 
-  // Get alert summary counts
-  getAlertSummary: async () => {
-    const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/alerts/summary`, { headers });
-    return res.json();
+  /** Fetch fraud alerts with optional level / status filters */
+  getFraudAlerts: async (level = "", status = "") => {
+    const headers = await authHeaders(false);
+    const params = new URLSearchParams();
+    if (level)  params.append("level", level);
+    if (status) params.append("status", status);
+    const res = await fetch(`${API_BASE_URL}/government/alerts?${params}`, { headers });
+    return safeJson(res);
   },
 
-  // Resolve an alert
-  resolveAlert: async (alertId) => {
-    const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/alerts/${alertId}/resolve`, {
-      method: 'PATCH',
+  /** Alias used by teammate's dashboard — same endpoint as getFraudAlerts */
+  getAlerts: async () => {
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/government/alerts`, { headers });
+    return safeJson(res);
+  },
+
+  /**
+   * Triggers Python AI /scan-all → writes fraud alerts to MongoDB → returns fresh alerts.
+   * Returns { scanned: true, alerts: [...] }
+   */
+  triggerScanAndGetAlerts: async () => {
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/government/scan`, {
+      method: "POST",
       headers,
     });
-    return res.json();
+    return safeJson(res);
   },
 
-  // Get fraud info for a specific batch
+  /** Resolve a single alert by ID */
+  resolveAlert: async (alertId) => {
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/government/alerts/${alertId}/resolve`, {
+      method: "PATCH",
+      headers,
+    });
+    return safeJson(res);
+  },
+
+  /** Approve a batch (government authority) */
+  approveBatch: async (batchId) => {
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/government/approve/${batchId}`, {
+      method: "PATCH",
+      headers,
+    });
+    return safeJson(res);
+  },
+
+  /** Reject a batch (government authority) */
+  rejectBatch: async (batchId) => {
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/government/reject/${batchId}`, {
+      method: "PATCH",
+      headers,
+    });
+    return safeJson(res);
+  },
+
+  // ── Batch lookup ─────────────────────────────────────────────────────────
+
+  getBatchById: async (batchId) => {
+    const res = await fetch(`${API_BASE_URL}/batch/batchId/${batchId}`);
+    return safeJson(res);
+  },
+
   getBatchFraudInfo: async (batchId) => {
-    const res = await fetch(`${BASE_URL}/batches/${batchId}/fraud`);
-    return res.json();
+    const res = await fetch(`${API_BASE_URL}/batch/batches/${batchId}/fraud`);
+    return safeJson(res);
   },
 
-  // Manually trigger AI fraud scan on a batch
+  // ── Consumer ─────────────────────────────────────────────────────────────
+
+  /** Verify a batch by ID (public, no auth required) */
+  verifyBatch: async (batchId) => {
+    const res = await fetch(`${API_BASE_URL}/verify/${batchId}`);
+    return safeJson(res);
+  },
+
+  /** Get full batch details (public, no auth required) */
+  getBatchDetails: async (batchId) => {
+    const res = await fetch(`${API_BASE_URL}/batch/batchId/${batchId}`);
+    return safeJson(res);
+  },
+
+  // ── AI / Fraud ───────────────────────────────────────────────────────────
+
+  /** Trigger a fraud scan for a specific batch */
   triggerFraudScan: async (batchId) => {
     const headers = await authHeaders();
-    const res = await fetch(`${BASE_URL}/ai/predict`, {
-      method : 'POST',
+    const res = await fetch(`${API_BASE_URL}/ai/predict`, {
+      method: "POST",
       headers,
-      body   : JSON.stringify({ batchId }),
+      body: JSON.stringify({ batchId }),
     });
-    return res.json();
+    return safeJson(res);
   },
 
+  /** Get alert summary stats */
+  getAlertSummary: async () => {
+    const headers = await authHeaders(false);
+    const res = await fetch(`${API_BASE_URL}/alerts/summary`, { headers });
+    return safeJson(res);
+  },
 };
 
 export default ApiService;

@@ -55,25 +55,31 @@ router.post('/dispatch', auth, async (req, res) => {
     const created = [];
 
 for (const split of splits) {
-  const retailBatchId = `RB-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+  const retailBatchId = `RB-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+  const loc = split.location || null; // ✅ guard once, reuse everywhere
 
   const rb = await RetailBatch.create({
     retailBatchId,
     parentBatchId,
 
-    // 🔥 CRITICAL FIELDS
-    retailerEmail: split.retailerEmail?.trim().toLowerCase(),
-
-    quantityReceived: Number(split.quantity),
+    retailerEmail:     split.retailerEmail?.trim().toLowerCase(),
+    quantityReceived:  Number(split.quantity),
     quantityRemaining: Number(split.quantity),
 
-    productType: parentBatch.productType,
-    expiryDate: parentBatch.expiryDate,
-
-    status: 'Dispatched',
+    productType:  parentBatch.productType,
+    expiryDate:   parentBatch.expiryDate,
+    status:       'Dispatched',
     dispatchedAt: new Date(),
 
-    retailerLocation: split.location || 'Unknown'
+    retailerLocation: loc
+      ? `${loc.latitude},${loc.longitude}`
+      : 'Unknown',
+
+    location: {
+      latitude:  loc?.latitude  ?? null,  // ✅ safe even if loc is null
+      longitude: loc?.longitude ?? null,
+    },
   });
 
   created.push(rb);

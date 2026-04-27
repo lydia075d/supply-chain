@@ -21,8 +21,8 @@ const RetailBatchSchema = new mongoose.Schema({
   dispatchedAt    : { type: Date, default: Date.now },
   receivedAt      : Date,
   location        : {
-    latitude: { type: Number, required: true },
-longitude: { type: Number, required: true },
+    latitude: { type: Number, default: null },
+longitude: { type: Number, default: null },
   },
 
   fraudProbability : { type: Number, default: 0 },
